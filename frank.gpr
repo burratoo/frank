@@ -1,0 +1,58 @@
+project Frank is
+
+   type Runtime is ("Acton", "GNAT");
+   Selected_Runtime : Runtime := external ("Runtime", "Acton");
+
+   for Languages use ("Ada");
+   for Source_Dirs use ("src/**");
+   for Object_Dir use "obj";
+   for Main use ("frank_the_robot.adb");
+
+   package Naming is
+      for Body_Suffix ("asm") use ".s";
+   end Naming;
+
+   Runtime_Name := "";
+   Compiler_Flags := ();
+   Builder_Flags := ();
+   Linker_Flags := ();
+   Binder_Flags := ();
+
+   case Selected_Runtime is
+      when "Acton" =>
+         for Ignore_Source_Sub_Dirs use ("GNAT Support");
+         Runtime_Name   := "burratoo-acton";
+--           Compiler_Flags := Compiler_Flags & ("-flto");
+--           Linker_Flags   := Linker_Flags & ("-flto=8", "-O2");
+      when "GNAT" =>
+         for Ignore_Source_Sub_Dirs use ("Acton Support");
+         Runtime_Name  := "eabi";
+         Builder_Flags := ("--RTS=/Users/pat/Development/zfp-support-gpl-2014-src/runtimes/obj/ravenscar-sfp-sam7s.build");
+   end case;
+
+   package Compiler is
+      for Default_Switches ("ada") use Compiler_Flags & ("-O2", "-ffunction-sections", "-fdata-sections", "-gnatp");
+      for Switches ("ada-interrupts-names.ads") use Compiler'Default_Switches ("ada") & ("-gnatg");
+   end Compiler;
+
+   package Ide is
+      for Gnat use "arm-" & Runtime_Name & "-gnat";
+      for Gnatlist use "arm-" & Runtime_Name & "-gnatls";
+      for Debugger_Command use "arm-" & Runtime_Name & "-gdb";
+   end Ide;
+
+   package Linker is
+      for Default_Switches ("ada") use Linker_Flags & ("-g", "-Wl,--gc-sections");
+   end Linker;
+
+   package Builder is
+      for Default_Switches ("ada") use Builder_Flags & ("-g", "-mcpu=arm7tdmi");
+      for Switches (others) use ("-j8");
+   end Builder;
+
+   package Binder is
+      for Switches ("ada") use Binder_Flags;
+   end Binder;
+
+end Frank;
+
